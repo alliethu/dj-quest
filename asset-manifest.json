@@ -1,13 +1,13 @@
 {
   "files": {
     "main.css": "/dj-quest/static/css/main.ee24ff8c.css",
-    "main.js": "/dj-quest/static/js/main.45832074.js",
+    "main.js": "/dj-quest/static/js/main.e0f0169c.js",
     "index.html": "/dj-quest/index.html",
     "main.ee24ff8c.css.map": "/dj-quest/static/css/main.ee24ff8c.css.map",
-    "main.45832074.js.map": "/dj-quest/static/js/main.45832074.js.map"
+    "main.e0f0169c.js.map": "/dj-quest/static/js/main.e0f0169c.js.map"
   },
   "entrypoints": [
     "static/css/main.ee24ff8c.css",
-    "static/js/main.45832074.js"
+    "static/js/main.e0f0169c.js"
   ]
 }
