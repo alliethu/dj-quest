@@ -223,7 +223,6 @@ function App() {
           savedBeats={savedBeats}
           onSaveBeat={handleSaveBeat}
           onDeleteBeat={handleDeleteBeat}
-          onShareBeat={handleShareBeat}
           onGoHome={handleGoHome}
         />
       );

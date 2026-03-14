@@ -3,11 +3,12 @@ import { colors, fonts, shared } from '../styles';
 import useAudio from '../hooks/useAudio';
 import useRecorder from '../hooks/useRecorder';
 import useBeatPlayer from '../hooks/useBeatPlayer';
+import { shareBeatAsAudio } from '../hooks/renderBeat';
 import BeatPad from './BeatPad';
 
 const ALL_PAD_TYPES = ['KICK', 'SNARE', 'HI-HAT', 'FX'];
 
-export default function BeatMakerScreen({ savedBeats, onSaveBeat, onDeleteBeat, onShareBeat, onGoHome }) {
+export default function BeatMakerScreen({ savedBeats, onSaveBeat, onDeleteBeat, onGoHome }) {
   const { playSound } = useAudio();
   const { isRecording, beats: recordedBeats, startRecording, recordTap, stopRecording, clearRecording } = useRecorder();
   const { isPlaying, activePad, play, stop } = useBeatPlayer(playSound);
@@ -16,6 +17,7 @@ export default function BeatMakerScreen({ savedBeats, onSaveBeat, onDeleteBeat, 
   const [beatName, setBeatName] = useState('');
   const [showSaveForm, setShowSaveForm] = useState(false);
   const [copied, setCopied] = useState(null);
+  const [sharing, setSharing] = useState(null);
 
   const handleTap = useCallback((padType) => {
     playSound(padType);
@@ -47,15 +49,19 @@ export default function BeatMakerScreen({ savedBeats, onSaveBeat, onDeleteBeat, 
     setBeatName('');
   }, [lastRecording, beatName, onSaveBeat]);
 
-  const handleShare = useCallback((beat) => {
-    const shareUrl = onShareBeat(beat);
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(shareUrl).then(() => {
+  const handleShare = useCallback(async (beat) => {
+    setSharing(beat.id);
+    try {
+      const result = await shareBeatAsAudio(beat);
+      if (result === 'shared' || result === 'downloaded') {
         setCopied(beat.id);
         setTimeout(() => setCopied(null), 2000);
-      });
+      }
+    } catch (e) {
+      // ignore share errors
     }
-  }, [onShareBeat]);
+    setSharing(null);
+  }, []);
 
   const containerStyle = {
     ...shared.container,
@@ -286,8 +292,9 @@ export default function BeatMakerScreen({ savedBeats, onSaveBeat, onDeleteBeat, 
                   <button
                     style={{ ...smallBtnStyle, background: `${colors.green}33` }}
                     onClick={() => handleShare(beat)}
+                    disabled={sharing === beat.id}
                   >
-                    {copied === beat.id ? '✅' : '🔗'}
+                    {sharing === beat.id ? '⏳' : copied === beat.id ? '✅' : '📤'}
                   </button>
                   <button
                     style={{ ...smallBtnStyle, background: `${colors.pink}33` }}
