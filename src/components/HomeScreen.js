@@ -3,7 +3,7 @@ import { colors, fonts, shared } from '../styles';
 import levels from '../data/levels';
 import tips from '../data/tips';
 
-export default function HomeScreen({ djName, setDjName, unlockedLevels, earnedBadges, onSelectLevel }) {
+export default function HomeScreen({ djName, setDjName, unlockedLevels, earnedBadges, onSelectLevel, onOpenBeatMaker, savedBeatsCount }) {
   const [nameInput, setNameInput] = useState(djName);
   const tip = useMemo(() => tips[Math.floor(Math.random() * tips.length)], []);
 
@@ -213,6 +213,23 @@ export default function HomeScreen({ djName, setDjName, unlockedLevels, earnedBa
         <div style={tipStyle}>
           💡 DJ Tip: {tip}
         </div>
+
+        {/* Beat Maker button */}
+        {djName && (
+          <button
+            style={{
+              ...shared.button,
+              fontSize: 'clamp(1rem, 3vw, 1.2rem)',
+              padding: '16px 36px',
+              background: `linear-gradient(135deg, ${colors.blue}, ${colors.purple})`,
+              boxShadow: `0 0 20px ${colors.blue}44, 0 4px 15px rgba(0,0,0,0.3)`,
+              marginTop: '4px',
+            }}
+            onClick={onOpenBeatMaker}
+          >
+            🎛️ Beat Maker {savedBeatsCount > 0 ? `(${savedBeatsCount})` : ''}
+          </button>
+        )}
       </div>
     </div>
   );

@@ -3,9 +3,11 @@ import HomeScreen from './components/HomeScreen';
 import PlayingScreen from './components/PlayingScreen';
 import WinScreen from './components/WinScreen';
 import FinalScreen from './components/FinalScreen';
+import BeatMakerScreen from './components/BeatMakerScreen';
 import levels from './data/levels';
 
 const STORAGE_KEY = 'dj-quest-save';
+const BEATS_KEY = 'dj-quest-beats';
 
 function loadSave() {
   try {
@@ -32,22 +34,85 @@ function writeSave(data) {
   }
 }
 
+function loadBeats() {
+  try {
+    const raw = localStorage.getItem(BEATS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function writeBeats(beats) {
+  try {
+    localStorage.setItem(BEATS_KEY, JSON.stringify(beats));
+  } catch (e) {
+    // ignore storage errors
+  }
+}
+
+function encodeBeat(beat) {
+  try {
+    const payload = { n: beat.name, b: beat.beats, d: beat.duration };
+    return btoa(JSON.stringify(payload));
+  } catch (e) {
+    return '';
+  }
+}
+
+function decodeBeat(encoded) {
+  try {
+    const payload = JSON.parse(atob(encoded));
+    if (payload.n && Array.isArray(payload.b) && payload.b.length > 0) {
+      return {
+        id: Date.now().toString(36),
+        name: payload.n,
+        beats: payload.b,
+        duration: payload.d || 0,
+        createdAt: Date.now(),
+      };
+    }
+  } catch (e) {
+    // invalid share data
+  }
+  return null;
+}
+
 function App() {
-  const [screen, setScreen] = useState('home'); // home | playing | win | final
+  const [screen, setScreen] = useState('home'); // home | playing | win | final | beatmaker
   const [selectedLevel, setSelectedLevel] = useState(0);
   const [djName, setDjName] = useState('');
   const [unlockedLevels, setUnlockedLevels] = useState([0]);
   const [earnedBadges, setEarnedBadges] = useState([]);
+  const [savedBeats, setSavedBeats] = useState([]);
 
-  // Load save on mount
+  // Load save on mount + check for shared beat in URL
   useEffect(() => {
     const save = loadSave();
     setDjName(save.djName);
     setUnlockedLevels(save.unlockedLevels);
     setEarnedBadges(save.earnedBadges);
+    setSavedBeats(loadBeats());
+
+    // Check for shared beat in URL params
+    const params = new URLSearchParams(window.location.search);
+    const sharedData = params.get('beat');
+    if (sharedData) {
+      const beat = decodeBeat(sharedData);
+      if (beat) {
+        setSavedBeats((prev) => {
+          const updated = [beat, ...prev];
+          writeBeats(updated);
+          return updated;
+        });
+        setScreen('beatmaker');
+      }
+      // Clean URL
+      window.history.replaceState({}, '', window.location.pathname);
+    }
   }, []);
 
-  // Persist on change
+  // Persist game progress on change
   useEffect(() => {
     if (djName) {
       writeSave({ djName, unlockedLevels, earnedBadges });
@@ -69,7 +134,6 @@ function App() {
       if (prev.includes(levelId)) return prev;
       return [...prev, levelId];
     });
-    // Unlock next level
     const nextId = levelId + 1;
     if (nextId < levels.length) {
       setUnlockedLevels((prev) => {
@@ -102,6 +166,32 @@ function App() {
     setScreen('home');
   }, []);
 
+  const handleOpenBeatMaker = useCallback(() => {
+    setScreen('beatmaker');
+  }, []);
+
+  const handleSaveBeat = useCallback((beat) => {
+    setSavedBeats((prev) => {
+      const updated = [beat, ...prev];
+      writeBeats(updated);
+      return updated;
+    });
+  }, []);
+
+  const handleDeleteBeat = useCallback((beatId) => {
+    setSavedBeats((prev) => {
+      const updated = prev.filter((b) => b.id !== beatId);
+      writeBeats(updated);
+      return updated;
+    });
+  }, []);
+
+  const handleShareBeat = useCallback((beat) => {
+    const encoded = encodeBeat(beat);
+    const base = window.location.origin + window.location.pathname;
+    return `${base}?beat=${encoded}`;
+  }, []);
+
   switch (screen) {
     case 'playing':
       return (
@@ -127,6 +217,16 @@ function App() {
           onPlayAgain={handlePlayAgain}
         />
       );
+    case 'beatmaker':
+      return (
+        <BeatMakerScreen
+          savedBeats={savedBeats}
+          onSaveBeat={handleSaveBeat}
+          onDeleteBeat={handleDeleteBeat}
+          onShareBeat={handleShareBeat}
+          onGoHome={handleGoHome}
+        />
+      );
     default:
       return (
         <HomeScreen
@@ -135,6 +235,8 @@ function App() {
           unlockedLevels={unlockedLevels}
           earnedBadges={earnedBadges}
           onSelectLevel={handleSelectLevel}
+          onOpenBeatMaker={handleOpenBeatMaker}
+          savedBeatsCount={savedBeats.length}
         />
       );
   }
