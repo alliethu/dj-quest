@@ -13,6 +13,7 @@ root.render(
 // Register service worker for PWA / offline support
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
+    const swPath = process.env.PUBLIC_URL + '/sw.js';
+    navigator.serviceWorker.register(swPath).catch(() => {});
   });
 }
